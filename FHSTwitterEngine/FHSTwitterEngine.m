@@ -24,6 +24,7 @@
 //  THE SOFTWARE.
 
 #import "FHSTwitterEngine.h"
+#import "ASIHTTPRequest.h"
 
 #import "OAuthConsumer.h"
 #import <QuartzCore/QuartzCore.h>
@@ -465,11 +466,12 @@ id removeNull(id rootObject) {
     OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
     
     NSMutableArray *params = [[NSMutableArray alloc]init];
+    
+    OARequestParameter *mediaP = [OARequestParameter requestParameterWithName:@"media_data[]" value:[ASIHTTPRequest base64forData:theData]];
+    [params addObject:mediaP];
+    
     OARequestParameter *statusP = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
     [params addObject:statusP];
-    
-    OARequestParameter *mediaP = [OARequestParameter requestParameterWithName:@"media[]" value:[theData base64EncodingWithLineLength:0]];
-    [params addObject:mediaP];
     
     if (irt.length > 0) {
         OARequestParameter *inReplyToP = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:irt];
