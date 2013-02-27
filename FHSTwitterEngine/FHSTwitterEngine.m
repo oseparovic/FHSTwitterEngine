@@ -1961,7 +1961,7 @@ id removeNull(id rootObject) {
     }
     
     if (errorCode == 403) {
-        return @"Check what you are posting. Twitter doesn't accept duplicate posts.";
+        return @"Update limit hit, check what you are posting. Twitter doesn't accept duplicate posts.";
     }
     
     if (errorCode == 404 || errorCode == 34) {
