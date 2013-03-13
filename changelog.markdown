@@ -4,6 +4,8 @@
 FHSTwitterEngine
 ===
 
+Bear in mind that I didn't exactly start this until recently, and FHSTwitterEngine used to be 100% undocumented.
+
 **Initial Commits**
 
 - Added more endpoints
@@ -23,6 +25,13 @@ FHSTwitterEngine
 **Version 1.2**
 
 - Fixed the postTweet:withImageData:inReplyTo: method.
+- Added Search API stuffs
+
+**Version 1.3**
+- Added self.includeEntities to turn on or off the inclusion of entities. Defaults to NO.
+
+**Version 3.1.3**
+- Fixed some potential problems in base64EncodingWithLineLength:
 
 
 OAuthConsumer
@@ -41,4 +50,8 @@ OAuthConsumer
 
 - Fix most remaining memory leaks
 - Add better support the pin/verifier property in OAToken (The version of OAuthConsumer in SA_OAuthTwitterEngine uses the pin property)
+
+**Version 1.2**
+
+- Fix some potential memory leaks
 

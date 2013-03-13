@@ -25,8 +25,8 @@
 
 //
 //
-// Version 1.2
-// FHSTwitterEngine OAuthConsumer Version 1.1
+// //// Version 1.3.1 ////
+// FHSTwitterEngine //OAuthConsumer// Version 1.2
 //
 //
 
@@ -72,6 +72,12 @@ typedef enum {
     FHSTwitterEngineImageSizeBigger, // 73x73
     FHSTwitterEngineImageSizeOriginal // original size of image
 } FHSTwitterEngineImageSize;
+
+typedef enum {
+    FHSTwitterEngineResultTypeMixed,
+    FHSTwitterEngineResultTypeRecent,
+    FHSTwitterEngineResultTypePopular
+} FHSTwitterEngineResultType;
 
 // Remove NSNulls from NSDictionary and NSArray
 // Credit for this function goes to Conrad Kramer
@@ -125,6 +131,9 @@ id removeNull(id rootObject);
 // users/lookup
 - (id)getUserInformationForUsers:(NSArray *)users areUsers:(BOOL)flag;
 
+// users/search
+- (id)searchUsersWithQuery:(NSString *)q andCount:(int)count;
+
 // notifications/follow & notifications/leave
 - (NSError *)disableNotificationsForID:(NSString *)identifier;
 - (NSError *)disableNotificationsForUsername:(NSString *)username;
@@ -166,9 +175,6 @@ id removeNull(id rootObject);
 
 // account/verify_credentials
 - (id)verifyCredentials;
-
-// search
-- (id)searchTwitterWithQuery:(NSString *)queryString;
 
 // friendships/exists
 - (id)user:(NSString *)user followsUser:(NSString *)userTwo areUsernames:(BOOL)areUsernames;
@@ -303,6 +309,9 @@ id removeNull(id rootObject);
 // lists/create
 - (NSError *)createListWithName:(NSString *)name isPrivate:(BOOL)isPrivate description:(NSString *)description;
 
+// search
+- (id)searchTweetsWithQuery:(NSString *)q count:(int)count resultType:(FHSTwitterEngineResultType)resultType unil:(NSDate *)untilDate sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
+
 //
 // Login and Auth
 //
@@ -336,6 +345,9 @@ id removeNull(id rootObject);
 // Determines your internet status
 + (BOOL)isConnectedToInternet;
 
+// Determines if entities should be included
+@property (nonatomic, assign) BOOL includeEntities;
+
 // Logged in user's username
 @property (nonatomic, strong) NSString *loggedInUsername;
 
@@ -346,7 +358,7 @@ id removeNull(id rootObject);
 @property (nonatomic, strong) id<FHSTwitterEngineAccessTokenDelegate> delegate;
 
 // Access Token
-@property (strong, nonatomic) OAToken *accessToken;
+@property (nonatomic, strong) OAToken *accessToken;
 
 @end
 

@@ -1,14 +1,4 @@
-# xcode noise
-build/*
-*.perspective
-*.perspectivev3
-*.pbxuser
-*.xcworkspace
-*.mode1
-*.mode2v3
-*.mode1v3
-xcuserdata
-Snapshots
- 
-# osx noise
- .DS_Store
+*.xcuserstate
+FHSTwitterEngine.xcodeproj/xcuserdata/
+FHSTwitterEngine.xcodeproj/project.xcworkspace/
+.DS_Store
