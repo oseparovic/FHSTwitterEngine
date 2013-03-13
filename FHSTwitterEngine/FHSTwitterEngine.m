@@ -76,6 +76,7 @@ id removeNull(id rootObject) {
 @property (strong, nonatomic) FHSTwitterEngine *engine;
 @property (strong, nonatomic) UIWebView *theWebView;
 @property (strong, nonatomic) OAToken *requestToken;
+@property (strong, nonatomic) void(^completionBlock)(BOOL success);
 
 - (id)initWithEngine:(FHSTwitterEngine *)theEngine;
 - (NSString *)locatePin;
@@ -2077,7 +2078,14 @@ id removeNull(id rootObject) {
 }
 
 - (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender {
-    [sender presentModalViewController:[self OAuthLoginWindow] animated:YES];
+    [self showOAuthLoginControllerFromViewController:sender withCompletion:nil];
+}
+
+- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(BOOL success))completionBlock {
+    FHSTwitterEngineController *vc = [[FHSTwitterEngineController alloc]initWithEngine:self];
+    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+    vc.completionBlock = completionBlock;
+    [sender presentModalViewController:vc animated:YES];
 }
 
 - (UIViewController *)OAuthLoginWindow {
@@ -2207,7 +2215,13 @@ id removeNull(id rootObject) {
 
 - (void)gotPin:(NSString *)pin {
     [self.requestToken setVerifier:pin];
-    [self.engine finishAuthWithPin:pin andRequestToken:self.requestToken];
+    int ret = [self.engine finishAuthWithPin:pin andRequestToken:self.requestToken];
+    
+    if (self.completionBlock) {
+        // make sure that a completion block has been set.
+        self.completionBlock(!ret);
+    }
+    
     [self dismissModalViewControllerAnimated:YES];
 }
 
