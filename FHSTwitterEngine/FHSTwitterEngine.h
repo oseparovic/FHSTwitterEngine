@@ -120,7 +120,7 @@ id removeNull(id rootObject);
 - (id)getHomeTimelineSinceID:(NSString *)sinceID count:(int)count;
 
 // help/test
-- (BOOL)testService;
+- (BOOL)testService __attribute__((deprecated));;
 
 // blocks/create
 - (NSError *)block:(NSString *)username;
@@ -222,7 +222,7 @@ id removeNull(id rootObject);
 - (id)showDirectMessage:(NSString *)messageID;
 
 // report_spam
-- (NSError *)reportUserAsSpam:(NSString *)user isID:(BOOL)isID;
+- (NSError *)reportUserAsSpam:(NSString *)user isID:(BOOL)isID __attribute__((deprecated));
 
 // help/configuration
 - (id)getConfiguration;

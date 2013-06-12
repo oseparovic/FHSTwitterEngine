@@ -1,9 +1,7 @@
 FHSTwitterEngine
 ================
 
-***The synchronous Twitter engine that doesn't suck!!***
-
-Created by [Nathaniel Symer](mailto:nate@natesymer.com), aka [@natesymer](http://twitter.com/natesymer)
+Original project created by [Nathaniel Symer](mailto:nate@natesymer.com), aka [@natesymer](http://twitter.com/natesymer)
 
 `FHSTwitterEngine` can:
 
@@ -20,7 +18,6 @@ Why `FHSTwitterEngine` is better than `MGTwitterEngine`:
 - Synchronous allowing for easier implementation (see Usage)
 - More implemented API endpoints
 - Uses a fixed version of OAuthConsumer (mine)
-- **Less crufty**
 
 
 **Setup**
@@ -136,13 +133,3 @@ Feel free to [email](mailto:nate@natesymer.com) me for suggestions.
 - Fixed memory leaks
 - Fixed bugs
 - Compatibility with alternative versions of OAuthConsumer
-
-**I'm from New Jersey, so pardon my sarcastic comments, mkay?**
-
-**Fixes for some common problems** (and best practices)
-
-- If you have any errors concerning multiple declarations for any class, check to make sure that any class is not importing another class which is importing the first class (aka `#import` loop - A imports B which imports A which imports B...)
-
-kthxbye
-
-
