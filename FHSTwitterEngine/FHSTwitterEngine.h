@@ -113,8 +113,10 @@ id removeNull(id rootObject);
 //
 
 // statuses/update
-- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString;
-- (NSError *)postTweet:(NSString *)tweetString;
+- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString __attribute__((deprecated));
+- (NSError *)postTweet:(NSString *)tweetString __attribute__((deprecated));
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData __attribute__((deprecated));
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt;
 
 // statuses/home_timeline
 - (id)getHomeTimelineSinceID:(NSString *)sinceID count:(int)count;
@@ -264,10 +266,6 @@ id removeNull(id rootObject);
 // statuses/destory
 - (NSError *)destoryTweet:(NSString *)identifier;
 
-// statuses/update_with_media
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData;
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt;
-
 // statuses/mentions_timeline
 - (id)getMentionsTimelineWithCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
 - (id)getMentionsTimelineWithCount:(int)count;
@@ -361,6 +359,9 @@ id removeNull(id rootObject);
 // Access Token
 @property (nonatomic, strong) OAToken *accessToken;
 
+// Store the number of characters reserved for the twitter image link
+@property (nonatomic, strong) NSString *charactersReservedPerMedia;
+
 @end
 
 @interface NSData (Base64)
@@ -370,6 +371,5 @@ id removeNull(id rootObject);
 @end
 
 @interface NSString (FHSTwitterEngine)
-- (NSString *)trimForTwitter;
 - (BOOL)isNumeric;
 @end

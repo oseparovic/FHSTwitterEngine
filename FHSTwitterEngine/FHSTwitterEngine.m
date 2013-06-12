@@ -105,11 +105,6 @@ id removeNull(id rootObject) {
 
 @implementation NSString (FHSTwitterEngine)
 
-- (NSString *)trimForTwitter {
-    NSString *string = [self stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    return (string.length > 140)?[string substringToIndex:140]:string;
-}
-
 - (BOOL)isNumeric {
 	const char *raw = (const char *)[self UTF8String];
     
@@ -497,68 +492,68 @@ id removeNull(id rootObject) {
 }
 
 #pragma mark - Posting Tweets
+- (NSError *)postTweet:(NSString *)tweetString {
+    return [self postTweet:tweetString withImageData:nil inReplyTo:nil];
+}
+
 - (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData {
     return [self postTweet:tweetString withImageData:theData inReplyTo:nil];
 }
 
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt {
-    
-    if (tweetString.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
-    }
-    
-    if (theData == nil) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update_with_media.json"];
-    OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
-    
-    NSMutableArray *params = [NSMutableArray array];
-    OARequestParameter *statusP = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
-    OARequestParameter *mediaP = [OARequestParameter requestParameterWithName:@"media_data[]" value:[theData base64EncodingWithLineLength:0]];
-    OARequestParameter *inReplyToP = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:irt];
-    
-    [params addObject:statusP];
-    [params addObject:mediaP];
-    
-    if (irt.length > 0) {
-        [params addObject:inReplyToP];
-    }
-    
-    return [self sendPOSTRequest:request withParameters:params];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString {
-    return [self postTweet:tweetString inReplyTo:nil];
-}
-
 - (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString {
-    
-    if (tweetString.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
+    return [self postTweet:tweetString withImageData:nil inReplyTo:inReplyToString];
+}
+
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt {
+    if (theData == nil) {
+        // Updates the authenticating user's current status, also known as tweeting.
+        // https://dev.twitter.com/docs/api/1.1/post/statuses/update
+        
+        if (tweetString.length == 0) {
+            return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
+        }
+        
+        // Trim down the tweet string to 140 characters
+        tweetString = [self trimTweetString:tweetString containsImageLink:NO];
+        
+        NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update.json"];
+        OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
+        
+        NSMutableArray *params = [NSMutableArray array];
+        OARequestParameter *statusParam = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
+        OARequestParameter *inReplyToIDParam = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:irt];
+        
+        [params addObject:statusParam];
+        
+        if (irt.length > 0) {
+            [params addObject:inReplyToIDParam];
+        }
+        
+        return [self sendPOSTRequest:request withParameters:params];
+    } else {
+        // Updates the authenticating user's current status and attaches media for upload. 
+        // https://dev.twitter.com/docs/api/1.1/post/statuses/update_with_media
+        
+        // Trim down the tweet string to 140-characters_reserved_per_media. If the string is too long to include the image link 403 returned.
+        tweetString = [self trimTweetString:tweetString containsImageLink:YES];
+        
+        NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update_with_media.json"];
+        OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
+        
+        NSMutableArray *params = [NSMutableArray array];
+        OARequestParameter *statusParam = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
+        OARequestParameter *mediaParam = [OARequestParameter requestParameterWithName:@"media_data[]" value:[theData base64EncodingWithLineLength:0]];
+        OARequestParameter *inReplyToParam = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:irt];
+        
+        [params addObject:statusParam];
+        [params addObject:mediaParam];
+        
+        if (irt.length > 0) {
+            [params addObject:inReplyToParam];
+        }
+        
+        return [self sendPOSTRequest:request withParameters:params];
     }
-    
-    tweetString = [tweetString trimForTwitter];
-    
-    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update.json"];
-    
-    OARequestParameter *status = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
-    OARequestParameter *inReplyToID = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString];
-    
-    OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
-    
-    NSMutableArray *params = [NSMutableArray array];
-    
-    [params addObject:status];
-    
-    if (inReplyToString.length > 0) {
-        [params addObject:inReplyToID];
-    }
-    
-    // PARAMETERS WERE MALFORMED due to setting the params before the HTTP method... lulz
-    
-    return [self sendPOSTRequest:request withParameters:params];
 }
 
 - (NSError *)destoryTweet:(NSString *)identifier {
@@ -832,7 +827,7 @@ id removeNull(id rootObject) {
         return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
     }
     
-    body = [body trimForTwitter];
+    body = [self trimTweetString:body containsImageLink:NO];
     
     NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/direct_messages/new.json"];
     OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
@@ -1586,9 +1581,11 @@ id removeNull(id rootObject) {
 
 #pragma mark - Request Helpers
 - (NSError *)sendPOSTRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params {
-    
     if (![self isAuthorized]) {
-        return [NSError errorWithDomain:@"You are not authorized via OAuth" code:401 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        [self loadAccessToken];
+        if (![self isAuthorized]) {
+            return [NSError errorWithDomain:@"You are not authorized via OAuth" code:401 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        }
     }
     
     [request setCachePolicy:NSURLRequestReloadIgnoringCacheData];
@@ -1606,35 +1603,32 @@ id removeNull(id rootObject) {
     id parsedJSONResponse = removeNull([NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:nil]);
     
     if (response == nil || responseData == nil || error != nil) {
+        // We haven't received a valid response from Twitter, dump the message received making the HTTP request to the Twitter API server
         return [NSError errorWithDomain:error.domain code:error.code userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    }
-    
-    if (response.statusCode >= 304) {
-        return [NSError errorWithDomain:[self getSarcasticErrorDescriptionForErrorCode:response.statusCode] code:response.statusCode userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    }
-    
-    if ([parsedJSONResponse isKindOfClass:[NSDictionary class]]) {
-        NSString *errorMessage = [parsedJSONResponse objectForKey:@"error"];
-        NSArray *errorArray = [parsedJSONResponse objectForKey:@"errors"];
-        if (errorMessage.length > 0) {
-            return [NSError errorWithDomain:errorMessage code:[[parsedJSONResponse objectForKey:@"code"]intValue] userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-        } else if (errorArray.count > 0) {
-            if (errorArray.count > 1) {
-                return [NSError errorWithDomain:@"Multiple Errors" code:1337 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-            } else {
-                NSDictionary *theError = [errorArray objectAtIndex:0];
-                return [NSError errorWithDomain:[theError objectForKey:@"message"] code:[[theError objectForKey:@"code"]integerValue] userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-            }
+    } else if ([parsedJSONResponse isKindOfClass:[NSDictionary class]]) {
+        NSArray *errors = [parsedJSONResponse objectForKey:@"errors"];
+        if (errors.count) {
+            // Twitter has returned us JSON response with message and error code, return it.
+            // https://dev.twitter.com/docs/error-codes-responses
+            NSDictionary *theError = [errors objectAtIndex:0];
+            return [NSError errorWithDomain:[theError objectForKey:@"message"]
+                                       code:[[theError objectForKey:@"code"]integerValue]
+                                   userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        } else {
+            // Twitter has not returned a JSON response containing the "errors" key, assume success
+            return nil;
         }
+    } else {
+        return nil;
     }
-    
-    return nil;
 }
 
 - (id)sendGETRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params {
-    
     if (![self isAuthorized]) {
-        return [NSError errorWithDomain:@"You are not authorized with Twitter. Please sign in." code:401 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        [self loadAccessToken];
+        if (![self isAuthorized]) {
+            return [NSError errorWithDomain:@"You are not authorized via OAuth" code:401 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        }
     }
     
     [request setCachePolicy:NSURLRequestReloadIgnoringCacheData];
@@ -1652,29 +1646,24 @@ id removeNull(id rootObject) {
     id parsedJSONResponse = removeNull([NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:nil]);
 
     if (response == nil || responseData == nil || error != nil) {
+        // We haven't received a valid response from Twitter, dump the message received making the HTTP request to the Twitter API server
         return [NSError errorWithDomain:error.domain code:error.code userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    }
-    
-    if (response.statusCode >= 304) {
-        return [NSError errorWithDomain:[self getSarcasticErrorDescriptionForErrorCode:response.statusCode] code:response.statusCode userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    }
-    
-    if ([parsedJSONResponse isKindOfClass:[NSDictionary class]]) {
-        NSString *errorMessage = [parsedJSONResponse objectForKey:@"error"];
-        NSArray *errorArray = [parsedJSONResponse objectForKey:@"errors"];
-        if (errorMessage.length > 0) {
-            return [NSError errorWithDomain:errorMessage code:[[parsedJSONResponse objectForKey:@"code"]intValue] userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-        } else if (errorArray.count > 0) {
-            if (errorArray.count > 1) {
-                return [NSError errorWithDomain:@"Multiple Errors" code:1337 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-            } else {
-                NSDictionary *theError = [errorArray objectAtIndex:0];
-                return [NSError errorWithDomain:[theError objectForKey:@"message"] code:[[theError objectForKey:@"code"]integerValue] userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-            }
+    } else if ([parsedJSONResponse isKindOfClass:[NSDictionary class]]) {
+        NSArray *errors = [parsedJSONResponse objectForKey:@"errors"];
+        if (errors.count) {
+            // Twitter has returned us JSON response with message and error code, return it.
+            // https://dev.twitter.com/docs/error-codes-responses
+            NSDictionary *theError = [errors objectAtIndex:0];
+            return [NSError errorWithDomain:[theError objectForKey:@"message"]
+                                       code:[[theError objectForKey:@"code"]integerValue]
+                                   userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        } else {
+            // Twitter has not returned a JSON response containing the "errors" key, assume success
+            return parsedJSONResponse;
         }
+    } else {
+        return nil;
     }
-    
-    return parsedJSONResponse;
 }
 
 #pragma mark - XAuth
@@ -2143,6 +2132,30 @@ id removeNull(id rootObject) {
     OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
     OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
     return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:userP, nil]];
+}
+
+#pragma mark - Helper functions
+- (void)loadConfiguration {
+    if ([self.charactersReservedPerMedia intValue] <= 0) {
+        // reload the configurations from Twitter and store them
+        id jsonResponse = [self getConfiguration];
+        self.charactersReservedPerMedia = [jsonResponse objectForKey:@"characters_reserved_per_media"];
+    }
+}
+
+- (NSString *)trimTweetString:(NSString *)tweetString containsImageLink:(BOOL)hasImageLink {
+    int tweetCharCap;
+    NSString *newTweetString = [tweetString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
+    if (hasImageLink) {
+        // This tweet will contain an image link so substring to 140 - characters_reserved_per_media. Make sure we have characters_reserved_per_media pulled from Twitter
+        [self loadConfiguration];
+        tweetCharCap = 140 - [self.charactersReservedPerMedia intValue];
+        return (newTweetString.length > tweetCharCap)?[newTweetString substringToIndex:tweetCharCap]:newTweetString;
+    } else {
+        tweetCharCap = 140;
+        return (newTweetString.length > tweetCharCap)?[newTweetString substringToIndex:tweetCharCap]:newTweetString;
+    }
 }
 
 @end
