@@ -493,6 +493,7 @@ id removeNull(id rootObject) {
     return [self sendGETRequest:request withParameters:params];
 }
 
+#pragma mark - Posting Tweets
 - (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData {
     return [self postTweet:tweetString withImageData:theData inReplyTo:nil];
 }
@@ -521,6 +522,38 @@ id removeNull(id rootObject) {
     if (irt.length > 0) {
         [params addObject:inReplyToP];
     }
+    
+    return [self sendPOSTRequest:request withParameters:params];
+}
+
+- (NSError *)postTweet:(NSString *)tweetString {
+    return [self postTweet:tweetString inReplyTo:nil];
+}
+
+- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString {
+    
+    if (tweetString.length == 0) {
+        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
+    }
+    
+    tweetString = [tweetString trimForTwitter];
+    
+    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update.json"];
+    
+    OARequestParameter *status = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
+    OARequestParameter *inReplyToID = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString];
+    
+    OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
+    
+    NSMutableArray *params = [NSMutableArray array];
+    
+    [params addObject:status];
+    
+    if (inReplyToString.length > 0) {
+        [params addObject:inReplyToID];
+    }
+    
+    // PARAMETERS WERE MALFORMED due to setting the params before the HTTP method... lulz
     
     return [self sendPOSTRequest:request withParameters:params];
 }
@@ -1608,90 +1641,6 @@ id removeNull(id rootObject) {
     return [usernames sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
 }
 
-- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString {
-    
-    if (tweetString.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
-    }
-    
-    tweetString = [tweetString trimForTwitter];
-    
-    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update.json"];
-    
-    OARequestParameter *status = [OARequestParameter requestParameterWithName:@"status" value:tweetString];
-    OARequestParameter *inReplyToID = [OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString];
-    
-    OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:self.accessToken realm:nil signatureProvider:nil];
-    
-    NSMutableArray *params = [NSMutableArray array];
-    
-    [params addObject:status];
-    
-    if (inReplyToString.length > 0) {
-        [params addObject:inReplyToID];
-    }
-    
-    // PARAMETERS WERE MALFORMED due to setting the params before the HTTP method... lulz
-    
-    return [self sendPOSTRequest:request withParameters:params];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString {
-    return [self postTweet:tweetString inReplyTo:nil];
-}
-
-
-//
-// XAuth
-//
-
-- (NSError *)getXAuthAccessTokenForUsername:(NSString *)username password:(NSString *)password {
-    
-    if (password.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
-    }
-    
-    if (username.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/oauth/access_token"];
-    
-	OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:nil realm:nil signatureProvider:nil];
-	
-	[request setHTTPMethod:@"POST"];
-    [request setCachePolicy:NSURLRequestReloadIgnoringCacheData];
-    [request setTimeoutInterval:25];
-	
-	[request setParameters:[NSArray arrayWithObjects:[OARequestParameter requestParameterWithName:@"x_auth_mode" value:@"client_auth"], [OARequestParameter requestParameterWithName:@"x_auth_username" value:username], [OARequestParameter requestParameterWithName:@"x_auth_password" value:password], nil]];
-    
-    [request prepare];
-    
-    NSError *error = nil;
-    NSHTTPURLResponse *response = nil;
-    
-    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-    
-    if (response == nil || responseData == nil || error != nil) {
-        return [NSError errorWithDomain:error.domain code:error.code userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    }
-    
-    if (response.statusCode >= 304) {
-        return [NSError errorWithDomain:[self getSarcasticErrorDescriptionForErrorCode:response.statusCode] code:response.statusCode userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    }
-
-    NSString *httpBody = [[NSString alloc]initWithData:responseData encoding:NSUTF8StringEncoding];
-    
-    if (httpBody.length > 0) {
-        [self storeAccessToken:httpBody];
-        return nil;
-    } else {
-        [self storeAccessToken:nil];
-        return [NSError errorWithDomain:@"Twitter messed up and did not return anything for some reason. Please try again later." code:500 userInfo:nil];
-    }
-    return 0;
-}
-
 //
 // sendRequest:
 //
@@ -1788,17 +1737,60 @@ id removeNull(id rootObject) {
     return parsedJSONResponse;
 }
 
-
-
-//
-// OAuth
-//
+#pragma mark - XAuth
+- (NSError *)getXAuthAccessTokenForUsername:(NSString *)username password:(NSString *)password {
+    
+    if (password.length == 0) {
+        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
+    }
+    
+    if (username.length == 0) {
+        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
+    }
+    
+    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/oauth/access_token"];
+    
+	OAMutableURLRequest *request = [[OAMutableURLRequest alloc]initWithURL:baseURL consumer:self.consumer token:nil realm:nil signatureProvider:nil];
+	
+	[request setHTTPMethod:@"POST"];
+    [request setCachePolicy:NSURLRequestReloadIgnoringCacheData];
+    [request setTimeoutInterval:25];
+	
+	[request setParameters:[NSArray arrayWithObjects:[OARequestParameter requestParameterWithName:@"x_auth_mode" value:@"client_auth"], [OARequestParameter requestParameterWithName:@"x_auth_username" value:username], [OARequestParameter requestParameterWithName:@"x_auth_password" value:password], nil]];
+    
+    [request prepare];
+    
+    NSError *error = nil;
+    NSHTTPURLResponse *response = nil;
+    
+    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    
+    if (response == nil || responseData == nil || error != nil) {
+        return [NSError errorWithDomain:error.domain code:error.code userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+    }
+    
+    if (response.statusCode >= 304) {
+        return [NSError errorWithDomain:[self getSarcasticErrorDescriptionForErrorCode:response.statusCode] code:response.statusCode userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+    }
+    
+    NSString *httpBody = [[NSString alloc]initWithData:responseData encoding:NSUTF8StringEncoding];
+    
+    if (httpBody.length > 0) {
+        [self storeAccessToken:httpBody];
+        return nil;
+    } else {
+        [self storeAccessToken:nil];
+        return [NSError errorWithDomain:@"Twitter messed up and did not return anything for some reason. Please try again later." code:500 userInfo:nil];
+    }
+    return 0;
+}
 
 /*
  This section of code is pretty crufty. I know. It works well enough 
  and is not accessed by the user. Move along. You didn't see anything.
  */
 
+#pragma mark - OAuth
 - (NSString *)getRequestTokenString {
     NSURL *url = [NSURL URLWithString:@"https://api.twitter.com/oauth/request_token"];
     
@@ -1860,10 +1852,7 @@ id removeNull(id rootObject) {
     return 0;
 }
 
-//
-// Access Token Management
-//
-
+#pragma mark - Access Token Management 
 - (void)loadAccessToken {
     
     NSString *savedHttpBody = nil;
@@ -1891,6 +1880,27 @@ id removeNull(id rootObject) {
     }
 }
 
+- (void)clearAccessToken {
+    [self storeAccessToken:@""];
+	self.accessToken = nil;
+    self.loggedInUsername = nil;
+}
+
+
+- (BOOL)isAuthorized {
+    if (!self.consumer) {
+        return NO;
+    }
+    
+	if (self.accessToken.key && self.accessToken.secret) {
+        if (self.accessToken.key.length > 0 && self.accessToken.secret.length > 0) {
+            return YES;
+        }
+    }
+    
+	return NO;
+}
+
 - (NSString *)extractUsernameFromHTTPBody:(NSString *)body {
 	if (!body) {
         return nil;
@@ -1915,26 +1925,6 @@ id removeNull(id rootObject) {
 	}
 	
 	return nil;
-}
-
-- (BOOL)isAuthorized {
-    if (!self.consumer) {
-        return NO;
-    }
-    
-	if (self.accessToken.key && self.accessToken.secret) {
-        if (self.accessToken.key.length > 0 && self.accessToken.secret.length > 0) {
-            return YES;
-        }
-    }
-    
-	return NO;
-}
-
-- (void)clearAccessToken {
-    [self storeAccessToken:@""];
-	self.accessToken = nil;
-    self.loggedInUsername = nil;
 }
 
 - (NSString *)extractUserIDFromHTTPBody:(NSString *)body {
@@ -2135,6 +2125,7 @@ id removeNull(id rootObject) {
 
 @end
 
+#pragma mark - Twitter Authentication Modal
 @implementation FHSTwitterEngineController
 
 @synthesize theWebView, requestToken, engine, navBar, blockerView, pinCopyBar;
