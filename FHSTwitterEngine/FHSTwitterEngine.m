@@ -1699,7 +1699,7 @@ id removeNull(id rootObject) {
     }
     
     if (response.statusCode >= 304) {
-        return [NSError errorWithDomain:[self getSarcasticErrorDescriptionForErrorCode:response.statusCode] code:response.statusCode userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
+        return [NSError errorWithDomain:[NSString stringWithFormat:@"%d", response.statusCode] code:response.statusCode userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
     }
     
     NSString *httpBody = [[NSString alloc]initWithData:responseData encoding:NSUTF8StringEncoding];
@@ -1714,12 +1714,24 @@ id removeNull(id rootObject) {
     return 0;
 }
 
-/*
- This section of code is pretty crufty. I know. It works well enough 
- and is not accessed by the user. Move along. You didn't see anything.
- */
-
 #pragma mark - OAuth
+- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender {
+    [self showOAuthLoginControllerFromViewController:sender withCompletion:nil];
+}
+
+- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(BOOL success))completionBlock {
+    FHSTwitterEngineController *vc = [[FHSTwitterEngineController alloc]initWithEngine:self];
+    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+    vc.completionBlock = completionBlock;
+    [sender presentModalViewController:vc animated:YES];
+}
+
+- (UIViewController *)OAuthLoginWindow {
+    FHSTwitterEngineController *vc = [[FHSTwitterEngineController alloc]initWithEngine:self];
+    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+    return vc;
+}
+
 - (NSString *)getRequestTokenString {
     NSURL *url = [NSURL URLWithString:@"https://api.twitter.com/oauth/request_token"];
     
@@ -1894,123 +1906,6 @@ id removeNull(id rootObject) {
     
     NSDate *date = [dateFormatter dateFromString:twitterDate];
     return date;
-}
-
-- (NSString *)getSarcasticErrorDescriptionForErrorCode:(int)errorCode {
-    if (errorCode == 32) {
-        return @"Your call could not be completed as dialed.";
-    }
-    
-    if (errorCode == 88) {
-        return @"The request limit for this resource has been reached for the current rate limit window.";
-    }
-    
-    if (errorCode == 89) {
-        return @"The access token used in the request is incorrect or has expired.";
-    }
-    
-    if (errorCode == 200) {
-        return @"Quit being such an uptight person. See error 420 (Enhance your calm) for help with this issue.";
-    }
-    
-    if (errorCode == -1009) {
-        return @"You are disconnected from the internet. Reconnect and try again.";
-    }
-    
-    if (errorCode == -1200) {
-        return @"This error is not your fault and is a temporary issue.";
-    }
-    
-    if (errorCode == -1012) {
-        return @"I paraphrase IT Crowd (British TV Show): Try logging out and back in again.";
-    }
-    
-    if (errorCode == 304) {
-        return @"There was no new data to return.";
-    }
-    
-    if (errorCode == 400) {
-        return @"Twitter is either rate limiting you, or this app just messed up.";
-    }
-    
-    if (errorCode == 401) {
-        return @"Are you logged in?";
-    }
-    
-    if (errorCode == 403) {
-        return @"Update limit hit, check what you are posting. Twitter doesn't accept duplicate posts.";
-    }
-    
-    if (errorCode == 404 || errorCode == 34) {
-        return @"Yeah, you know the drill. The content you requested is not available.";
-    }
-    
-    if (errorCode == 420) {
-        return @"Bro, You're being rate limited.";
-    }
-    
-    if (errorCode == 429) {
-        return @"Chill out dude, why are you overloading Twitter with so many requests? See error 420 for help.";
-    }
-    
-    if (errorCode == 500 || errorCode == 131) {
-        return @"Its not your fault, its Twitter's. Just try again later";
-    }
-    
-    if (errorCode == 502) {
-        return @"Twitter is down right now.";
-    }
-    
-    if (errorCode == 503 || errorCode == 130) {
-        return @"Back off, Twitter is being accosted by people like you and is over capacity.";
-    }
-    
-    if (errorCode == 504) {
-        return @"Twitter had an API fart.";
-    }
-    
-    if (errorCode == 1001) { // -1001
-        return @"There is something wrong, and it is most likely my fault. So sue me.";
-    }
-    
-    if (errorCode == 0) {
-        return nil;
-    }
-    
-    if (errorCode == 1) {
-        return @"Just because it's an API Error doesn't mean that you have to blame it on Twitter.";
-    }
-    
-    if (errorCode == 2) {
-        return @"Missing something?";
-    }
-    
-    if (errorCode == 3) {
-        return @"This image is just too big for Twitter, try again later with 700KB...";
-    }
-    
-    if (errorCode == 4) {
-        return @"Who are you? You forgot to login...";
-    }
-    
-    return @"Whoa... An unknown error!";
-}
-
-- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender {
-    [self showOAuthLoginControllerFromViewController:sender withCompletion:nil];
-}
-
-- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(BOOL success))completionBlock {
-    FHSTwitterEngineController *vc = [[FHSTwitterEngineController alloc]initWithEngine:self];
-    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
-    vc.completionBlock = completionBlock;
-    [sender presentModalViewController:vc animated:YES];
-}
-
-- (UIViewController *)OAuthLoginWindow {
-    FHSTwitterEngineController *vc = [[FHSTwitterEngineController alloc]initWithEngine:self];
-    vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
-    return vc;
 }
 
 + (BOOL)isConnectedToInternet {
